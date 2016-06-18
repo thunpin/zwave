@@ -23,6 +23,6 @@
 
   "dependencies": {
     "openzwave-shared": "~1.2.0",
-    "express": "4.14.0"
+    "express": "~4.14.0"
   }
 }
