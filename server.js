@@ -1,38 +1,45 @@
 if (!process.env.ZWV_DEVICE || process.env.ZWV_DEVICE === '') {
     throw "configure environement variable ZWV_DEVICE";
 }
+var COMMAND_CLASS_SWITCH_MULTILEVEL = 38;
+var ADD_WAITING_TIME = 1000 * 60 * 3;
+var RESET_WAITING_TIME = 1000 * 60 * 5;
 
+var express = require('express');
 var tools = require('./tools.js');
 var ZWave = require('openzwave-shared');
-var zwave = new ZWave({
-    Logging: false
+
+var app = express();
+var zwave = new ZWave({Logging: false});
+var nodes = {};
+var adding = false;
+var reseting = false;
+
+zwave.connect(process.env.ZWV_DEVICE);
+// driver handlers
+// ===============
+zwave.on('driver ready', function(homeid) {
+    console.log('scanning homeid=0x%s...', homeid.toString(16));
 });
 
-var COMMAND_CLASS_SWITCH_MULTILEVEL = 38;
-
-var nodes = [];
-
-// connect to device
-zwave.connect(process.env.ZWV_DEVICE);
+zwave.on('driver failed', function() {
+    console.log('failed to start driver');
+    zwave.disconnect();
+    process.exit();
+});
 
 
 // just initialize your busines rule after this handler was executed
 zwave.on('scan complete', function() {
-    // zwave.setValue(nodeid, commandclass, instance, index, value);
-    // zwave.setValue(2, 38, 1, 0, 0);
-    
-    // Add a new device to the ZWave controller
-    // zwave.addNode(false);
-
-
-    // zwave.hardReset();
+	app.listen(3000, function () {
+	  tools.logTitle('zwave REST listening on port 3000!');
+	});
 });
 
 
 // node events
 // ===========
-
-zwave.on('node added', function(nodeid){
+zwave.on('node added', function(nodeid) {
     tools.log('node added', {nodeid:nodeid});
     nodes[nodeid] = {
         manufacturer: '',
@@ -51,35 +58,31 @@ zwave.on('node added', function(nodeid){
 zwave.on('node ready', function(nodeid, nodeinfo) {
     tools.log('node ready', {nodeId: nodeid}, nodeinfo);
     
-    node = nodes[nodeid]
+    node = nodes[nodeid];
 
     // update node
-    node.manufacturer = nodeinfo.manufacturer
-    node.manufacturerid = nodeinfo.manufacturerid
-    node.product = nodeinfo.product
-    node.producttype = nodeinfo.producttype
-    node.productid = nodeinfo.productid
-    node.type = nodeinfo.type
-    node.name = nodeinfo.name
-    node.loc = nodeinfo.loc
-    node.ready = true
+    node.id = nodeid;
+    node.manufacturer = nodeinfo.manufacturer;
+    node.manufacturerid = nodeinfo.manufacturerid;
+    node.product = nodeinfo.product;
+    node.producttype = nodeinfo.producttype;
+    node.productid = nodeinfo.productid;
+    node.type = nodeinfo.type;
+    node.name = nodeinfo.name;
+    node.loc = nodeinfo.loc;
+    node.ready = true;
 
-    nodes[nodeid] = node
+    nodes[nodeid] = node;
 
     for (var commandclass in node.classes) {
         if (commandclass == COMMAND_CLASS_SWITCH_MULTILEVEL) {
+        	node.withRange = true;
             zwave.enablePoll(nodeid, commandclass);
             break;
+        } else {
+        	node.withRange = false;
         }
     }
-});
-
-zwave.on('polling enabled/disabled', function(nodeid){
-    tools.log('polling enabled/disabled', {nodeId: nodeid}, data);
-});
-
-zwave.on('node event', function(nodeid, data) {
-    tools.log('node event', {nodeId: nodeid}, data);
 });
 
 zwave.on('value added', function(nodeid, commandclass, value){
@@ -123,7 +126,7 @@ zwave.on('value removed', function(nodeid, commandclass, index) {
 
 
 zwave.on('notification', function(nodeid, notif) {
-    tools.logTitle('notification')
+    tools.logTitle('notification');
     switch (notif) {
     case 0:
         console.log('node%d: message complete', nodeid);
@@ -150,28 +153,41 @@ zwave.on('notification', function(nodeid, notif) {
         console.log('node%d: %d', nodeid, notif);
         break;
     }
-    tools.logBottom()
+    tools.logBottom();
 });
 
-
-
-// driver handlers
-// ===============
-zwave.on('driver ready', function(homeid) {
-    console.log('scanning homeid=0x%s...', homeid.toString(16));
+app.get('/reset', function (req, res) {
+	if (!reseting) {
+		try {
+			setTimeout(function(){reseting = false;}, RESET_WAITING_TIME);
+			reseting = true;
+			zwave.hardReset();	
+		} catch (err) {
+			console.log(err);
+		}
+	}
+	
+	res.send("reseting....");
 });
 
-zwave.on('driver failed', function() {
-    console.log('failed to start driver');
-    zwave.disconnect();
-    process.exit();
+app.get('/nodes', function (req, res) {
+	res.send(nodes);
 });
-// END driver handlers
-// ===============
 
+app.get('/nodes/length', function (req, res) {
+	res.send({length:nodes.length});
+});
+
+app.get('/nodes/add', function (req, res) {
+	if (!adding) {
+		setTimeout(function(){adding = false;}, ADD_WAITING_TIME);
+		adding = true;
+		zwave.addNode(false);
+	}
+	res.send("adding...");
+});
 
 process.on('SIGINT', function() {
-    console.log('disconnecting...');
-    zwave.disconnect('/dev/ttyUSB0');
+    zwave.disconnect(process.env.ZWV_DEVICE);
     process.exit();
 });
