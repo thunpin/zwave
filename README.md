@@ -14,4 +14,5 @@ Install the ptoject dependencies (```cd zwave && npm install```). <br>
 instructions.
 
 ## execute project
-```node server.js```
+In this example we're using the device in /dev/ttyUSB0:
+```sudo ZWV_DEVICE='/dev/ttyUSB0' node server.js```

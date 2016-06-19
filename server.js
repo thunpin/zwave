@@ -52,6 +52,7 @@ zwave.on('node added', function(nodeid) {
         loc: '',
         classes: {},
         ready: false,
+        withRange: false
     };
 });
 
@@ -79,8 +80,6 @@ zwave.on('node ready', function(nodeid, nodeinfo) {
         	node.withRange = true;
             zwave.enablePoll(nodeid, commandclass);
             break;
-        } else {
-        	node.withRange = false;
         }
     }
 });
@@ -185,6 +184,65 @@ app.get('/nodes/add', function (req, res) {
 		zwave.addNode(false);
 	}
 	res.send("adding...");
+});
+
+app.get('/nodes/:nodeid/status', function (req, res) {
+	nodeid = req.params.nodeid;
+	if (nodes[nodeid]) {
+		node = nodes[nodeid];
+		res.send(nodes[nodeid].classes);
+	} else {
+		console.log(nodes[nodeid].classes[command]);
+		res.send("ops!");
+	}
+});
+
+app.get('/nodes/:nodeid/status/:command', function (req, res) {
+	nodeid = req.params.nodeid;
+	command = req.params.command;
+	if (nodes[nodeid] && nodes[nodeid].classes[command]) {
+		node = nodes[nodeid];
+		res.send(nodes[nodeid].classes[command]);
+	} else {
+		console.log(nodes[nodeid].classes[command]);
+		res.send("ops!");
+	}
+});
+
+app.get('/nodes/:nodeid/status/:command/:index', function (req, res) {
+	nodeid = req.params.nodeid;
+	command = req.params.command;
+	index = req.params.index;
+	if (nodes[nodeid] && 
+		nodes[nodeid].classes[command] && 
+		nodes[nodeid].classes[command][index]) {
+
+		node = nodes[nodeid];
+		res.send(nodes[nodeid].classes[command][index]);
+	} else {
+		console.log(nodes[nodeid].classes[command]);
+		res.send("ops!");
+	}
+});
+
+// change to post
+app.get('/nodes/:nodeid/command/:command/:index/:value', function (req, res) {
+	nodeid = req.params.nodeid;
+	command = req.params.command;
+	index = req.params.index;
+	value = req.params.value;
+	if (nodes[nodeid] && 
+		nodes[nodeid].classes[command] && 
+		nodes[nodeid].classes[command][index]) {
+
+		node = nodes[nodeid];
+		// zwave.setValue(nodeid, commandclass, instance, index, value);
+		zwave.setValue(nodeid, command, 1, index, value);
+		res.send("executed");
+	} else {
+		console.log(nodes[nodeid].classes[command]);
+		res.send("ops!");
+	}
 });
 
 process.on('SIGINT', function() {
