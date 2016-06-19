@@ -1,20 +1,17 @@
 if (!process.env.ZWV_DEVICE || process.env.ZWV_DEVICE === '') {
 	throw "configure environement variable ZWV_DEVICE";
 }
-var COMMAND_CLASS_SWITCH_MULTILEVEL = 38;
-var ADD_WAITING_TIME = 1000 * 60 * 3;
-var RESET_WAITING_TIME = 1000 * 60 * 5;
 
 var express = require('express');
 var ZWave = require('openzwave-shared');
 var tools = require('./tools.js');
 var routes = require('./routes.js');
 
+var COMMAND_CLASS_SWITCH_MULTILEVEL = 38;
+
 var app = express();
 var zwave = new ZWave({Logging: false});
 var nodes = {};
-var adding = false;
-var reseting = false;
 
 app.nodes = nodes
 app.zwave = zwave

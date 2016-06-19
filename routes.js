@@ -1,3 +1,9 @@
+var adding = false;
+var reseting = false;
+
+var ADD_WAITING_TIME = 1000 * 60 * 3;
+var RESET_WAITING_TIME = 1000 * 60 * 5;
+
 function parseResult(result) {
 	return {
 		class_id: result.class_id,
