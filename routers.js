@@ -66,6 +66,22 @@ module.exports.init = function(app) {
 		res.send("adding...");
 	});
 
+	app.get('/node/:nodeid', function (req, res) {
+		nodeid = req.params.nodeid;
+		if (app.nodes[nodeid]) {
+			var node = app.nodes[nodeid];
+			var value = {
+				id: node.id,
+				manufacturerid: node.manufacturerid,
+				producttype: node.producttype,
+				name: node.name
+			}
+			res.send(value)
+		} else {
+			res.send("ops!");
+		}
+	});
+
 	app.get('/node/:nodeid/rename/:name', function (req, res) {
 		nodeid = req.params.nodeid;
 		if (app.nodes[nodeid]) {
