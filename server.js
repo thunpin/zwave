@@ -5,7 +5,7 @@ if (!process.env.ZWV_DEVICE || process.env.ZWV_DEVICE === '') {
 var express = require('express');
 var ZWave = require('openzwave-shared');
 var tools = require('./tools.js');
-var routes = require('./routes.js');
+var routes = require('./routers.js');
 
 var COMMAND_CLASS_SWITCH_MULTILEVEL = 38;
 
