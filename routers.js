@@ -66,7 +66,17 @@ module.exports.init = function(app) {
 		res.send("adding...");
 	});
 
-	app.get('/nodes/:nodeid/status', function (req, res) {
+	app.get('/node/:nodeid/rename/:name', function (req, res) {
+		nodeid = req.params.nodeid;
+		if (app.nodes[nodeid]) {
+			name = req.params.name
+			app.zwave.setNodeName(nodeid, name)
+		} else {
+			res.send("ops!");
+		}
+	});
+
+	app.get('/node/:nodeid/status', function (req, res) {
 		nodeid = req.params.nodeid;
 		if (app.nodes[nodeid]) {
 			node = app.nodes[nodeid];
@@ -85,7 +95,7 @@ module.exports.init = function(app) {
 		}
 	});
 
-	app.get('/nodes/:nodeid/status/:status', function (req, res) {
+	app.get('/node/:nodeid/status/:status', function (req, res) {
 		nodeid = req.params.nodeid;
 		status = req.params.status;
 		if (app.nodes[nodeid] && app.nodes[nodeid].classes[status]) {
@@ -101,7 +111,7 @@ module.exports.init = function(app) {
 		}
 	});
 
-	app.get('/nodes/:nodeid/status/:status/:index', function (req, res) {
+	app.get('/node/:nodeid/status/:status/:index', function (req, res) {
 		nodeid = req.params.nodeid;
 		status = req.params.status;
 		index = req.params.index;
@@ -118,7 +128,7 @@ module.exports.init = function(app) {
 	});
 
 	// change to post
-	app.get('/nodes/:nodeid/command/:command/:index/:value', function (req, res) {
+	app.get('/node/:nodeid/command/:command/:index/:value', function (req, res) {
 		nodeid = req.params.nodeid;
 		command = req.params.command;
 		index = req.params.index;
