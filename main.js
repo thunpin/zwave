@@ -6,15 +6,55 @@ var express = require('express');
 var ZWave = require('openzwave-shared');
 var tools = require('./tools.js');
 var routes = require('./routers.js');
+var mongoose = require('mongoose');
 
 var COMMAND_CLASS_SWITCH_MULTILEVEL = 38;
 
 var app = express();
 var zwave = new ZWave({Logging: false});
+mongoose.connect('mongodb://localhost/test');
 var nodes = {};
 
-app.nodes = nodes
-app.zwave = zwave
+
+// define Node schema
+var nodeSchema = mongoose.Schema({
+    id: Number,
+	manufacturer: String,
+	genre: String,
+	manufacturerid: String,
+	product: String,
+	producttype: String,
+	productid: String,
+	type: String,
+	name: String,
+	loc: String,
+	ready: Boolean,
+	withRange: Boolean
+});
+var Node = mongoose.model('node', nodeSchema);
+var commandSchema = mongoose.Schema({ 
+	value_id: String,
+	node_id: Number,
+	class_id: Number,
+	type: String,
+	genre: String,
+	instance: Number,
+	index: Number,
+	label: String,
+	units: String,
+	help: String,
+	read_only: Boolean,
+	write_only: Boolean,
+	is_polled: Boolean,
+	min: Number,
+	max: Number,
+	value: Number 
+ });
+var Command = mongoose.model('command', commandSchema);
+
+
+app.nodes = nodes;
+app.zwave = zwave;
 zwave.connect(process.env.ZWV_DEVICE);
 // driver handlers
 // ===============
@@ -43,8 +83,10 @@ zwave.on('scan complete', function() {
 // ===========
 zwave.on('node added', function(nodeid) {
 	tools.log('node added', {nodeid:nodeid});
-	nodes[nodeid] = {
+	node = new Node({
+		id: nodeid,
 		manufacturer: '',
+		genre: '',
 		manufacturerid: '',
 		product: '',
 		producttype: '',
@@ -52,10 +94,13 @@ zwave.on('node added', function(nodeid) {
 		type: '',
 		name: '',
 		loc: '',
-		classes: {},
 		ready: false,
 		withRange: false
-	};
+	});
+	node.save();
+
+	node.classes = {};
+	nodes[nodeid] = node;
 });
 
 zwave.on('node ready', function(nodeid, nodeinfo) {
@@ -64,7 +109,6 @@ zwave.on('node ready', function(nodeid, nodeinfo) {
 	node = nodes[nodeid];
 
 	// update node
-	node.id = nodeid;
 	node.manufacturer = nodeinfo.manufacturer;
 	node.manufacturerid = nodeinfo.manufacturerid;
 	node.product = nodeinfo.product;
@@ -77,13 +121,7 @@ zwave.on('node ready', function(nodeid, nodeinfo) {
 
 	nodes[nodeid] = node;
 
-	for (var commandclass in node.classes) {
-		if (commandclass == COMMAND_CLASS_SWITCH_MULTILEVEL) {
-			node.withRange = true;
-			zwave.enablePoll(nodeid, commandclass);
-			break;
-		}
-	}
+	node.save();
 });
 
 zwave.on('value added', function(nodeid, commandclass, value){
@@ -96,6 +134,15 @@ zwave.on('value added', function(nodeid, commandclass, value){
 	if (!nodes[nodeid].classes[commandclass]) {
 		nodes[nodeid].classes[commandclass] = {};
 	}
+
+	if (nodes[nodeid].genre != 'system') {
+		intensity = 10;
+		zwave.enablePoll(nodeid, commandclass, intensity);
+	} else {
+		zwave.disablePoll(nodeid, commandclass);
+	}
+	command = new Command(value);
+	command.save();
 	nodes[nodeid].classes[commandclass][value.index] = value;
 });
 
@@ -106,7 +153,10 @@ zwave.on('value changed', function(nodeid, commandclass, value){
 		{command: commandclass},
 		{value: value});
 
-	nodes[nodeid].classes[commandclass][value.index] = value;
+	nodes[nodeid].ready = true;
+	command = new Command(value);
+	command.save();
+	nodes[nodeid].classes[commandclass][value.index] = command;
 });
 
 zwave.on('value refreshed', function(nodeid, commandclass, value){
@@ -134,6 +184,8 @@ zwave.on('notification', function(nodeid, notif) {
 		break;
 	case 1:
 		console.log('node%d: timeout', nodeid);
+		nodes[nodeid].ready = false;
+		nodes[nodeid].save();
 		break;
 	case 2:
 		console.log('node%d: nop', nodeid);
@@ -146,6 +198,8 @@ zwave.on('notification', function(nodeid, notif) {
 		break;
 	case 5:
 		console.log('node%d: node dead', nodeid);
+		nodes[nodeid].ready = false;
+		nodes[nodeid].save();
 		break;
 	case 6:
 		console.log('node%d: node alive', nodeid);

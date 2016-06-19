@@ -1,7 +1,7 @@
 var adding = false;
 var reseting = false;
 
-var ADD_WAITING_TIME = 1000 * 60 * 3;
+var ADD_WAITING_TIME = 1000 * 60 * 1;
 var RESET_WAITING_TIME = 1000 * 60 * 5;
 
 function parseResult(result) {
@@ -17,7 +17,7 @@ function parseResult(result) {
 		is_polled: result.is_polled,
 		min: result.min,
 		max: result.max,
-		value: result.value
+		value: result.value,
 	};
 }
 
@@ -45,7 +45,8 @@ module.exports.init = function(app) {
 				id: node.id,
 				manufacturerid: node.manufacturerid,
 				producttype: node.producttype,
-				name: node.name
+				name: node.name,
+				ready: node.ready
 			};
 			result.push(value);
 		}
@@ -74,9 +75,10 @@ module.exports.init = function(app) {
 				id: node.id,
 				manufacturerid: node.manufacturerid,
 				producttype: node.producttype,
-				name: node.name
-			}
-			res.send(value)
+				name: node.name,
+				ready: node.ready
+			};
+			res.send(value);
 		} else {
 			res.send("ops!");
 		}
@@ -85,10 +87,10 @@ module.exports.init = function(app) {
 	app.get('/node/:nodeid/rename/:name', function (req, res) {
 		nodeid = req.params.nodeid;
 		if (app.nodes[nodeid]) {
-			name = req.params.name
-			app.zwave.setNodeName(nodeid, name)
-			app.zwave.refreshNodeInfo(nodeid)
-			res.send("renamed")
+			name = req.params.name;
+			app.zwave.setNodeName(nodeid, name);
+			console.log(app.zwave.refreshNodeInfo(nodeid));
+			res.send("renamed");
 		} else {
 			res.send("ops!");
 		}
@@ -146,11 +148,13 @@ module.exports.init = function(app) {
 	});
 
 	// change to post
-	app.get('/node/:nodeid/command/:command/:index/:value', function (req, res) {
+	app.get('/node/:nodeid/command/:command/:instance/:value', function (req, res) {
 		nodeid = req.params.nodeid;
 		command = req.params.command;
-		index = req.params.index;
+		instance = req.params.instance;
 		value = req.params.value;
+		index = 0;
+		
 		if (app.nodes[nodeid] && 
 			app.nodes[nodeid].classes[command] && 
 			app.nodes[nodeid].classes[command][index]) {
@@ -162,7 +166,8 @@ module.exports.init = function(app) {
 			}
 
 			// app.zwave.setValue(nodeid, commandclass, instance, index, value);
-			app.zwave.setValue(nodeid, command, 1, index, value);
+			console.log(nodeid, command, instance, index, value)
+			app.zwave.setValue(nodeid, command, instance, index, value);
 			res.send("executed");
 		} else {
 			console.log(app.nodes[nodeid].classes[command]);
