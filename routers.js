@@ -87,6 +87,7 @@ module.exports.init = function(app) {
 		if (app.nodes[nodeid]) {
 			name = req.params.name
 			app.zwave.setNodeName(nodeid, name)
+			res.send("renamed")
 		} else {
 			res.send("ops!");
 		}
