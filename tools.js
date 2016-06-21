@@ -2,7 +2,7 @@
 // format text.
 var _CONSOLE_SIZE = 80;
 
-module.exports = {
+var logger = {
 
     logTitle: function(title) {
         console.log("=".repeat(_CONSOLE_SIZE));
@@ -20,13 +20,14 @@ module.exports = {
     },
 
     log: function(title, args_content) {
-        module.exports.logTitle(title);
+        logger.logTitle(title);
         if (arguments.length > 1) {
             for (var i = 1; i < arguments.length; i++) {
                 console.log(arguments[i]);
             }
         }
-        module.exports.logBottom();
+        logger.logBottom();
     }
-
 };
+
+module.exports = logger;

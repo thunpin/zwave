@@ -1,15 +1,21 @@
-if (!process.env.ZWV_DEVICE || process.env.ZWV_DEVICE === '') {
-    throw "configure environement variable ZWV_DEVICE";
+var tools = require('./tools');
+
+var device = process.env.ZWV_DEVICE;
+if (!device || device === '') {
+    tools.log('ERROR', 'configure environement variable ZWV_DEVICE');
+    process.exit(1);
 }
 
 var ZWave = require('openzwave-shared');
-var zwave = new ZWave({Logging: false});
+var zwave = new ZWave({
+    Logging: true
+});
 
-require('./zwave.js')(zwave);
+require('./zwave')(zwave);
 
-zwave.connect(process.env.ZWV_DEVICE);
+zwave.connect(device);
 
 process.on('SIGINT', function() {
-    zwave.disconnect(process.env.ZWV_DEVICE);
+    zwave.disconnect(device);
     process.exit();
 });
