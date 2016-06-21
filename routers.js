@@ -5,173 +5,180 @@ var ADD_WAITING_TIME = 1000 * 60 * 1;
 var RESET_WAITING_TIME = 1000 * 60 * 5;
 
 function parseResult(result) {
-	return {
-		class_id: result.class_id,
-		index: result.index,
-		type: result.type,
-		genre: result.genre,
-		label: result.label,
-		units: result.units,
-		read_only: result.read_only,
-     	write_only: result.write_only,
-		is_polled: result.is_polled,
-		min: result.min,
-		max: result.max,
-		value: result.value,
-	};
+    return {
+        class_id: result.class_id,
+        index: result.index,
+        type: result.type,
+        genre: result.genre,
+        label: result.label,
+        units: result.units,
+        read_only: result.read_only,
+        write_only: result.write_only,
+        is_polled: result.is_polled,
+        min: result.min,
+        max: result.max,
+        value: result.value,
+    };
 }
 
-module.exports.init = function(app) {
-	app.get('/reset', function (req, res) {
-		if (!reseting) {
-			try {
-				setTimeout(function(){reseting = false;}, RESET_WAITING_TIME);
-				reseting = true;
-				app.zwave.hardReset();  
-			} catch (err) {
-				console.log(err);
-			}
-		}
-		
-		res.send("reseting....");
-	});
+module.exports = function(app, zwave, nodes) {
 
-	app.get('/nodes', function (req, res) {
-		var result = [];
+    app.get('/reset', function(req, res) {
+        if (!reseting) {
+            try {
+                setTimeout(function() {
+                    reseting = false;
+                }, RESET_WAITING_TIME);
+                reseting = true;
+                zwave.hardReset();
+            } catch (err) {
+                console.log(err);
+            }
+        }
 
-		for (var key in app.nodes) {
-			var node = app.nodes[key];
-			var value = {
-				id: node.id,
-				manufacturerid: node.manufacturerid,
-				producttype: node.producttype,
-				name: node.name,
-				ready: node.ready
-			};
-			result.push(value);
-		}
+        res.send("reseting....");
+    });
 
-		res.send(result);
-	});
+    app.get('/nodes', function(req, res) {
+        var result = [];
 
-	app.get('/nodes/length', function (req, res) {
-		res.send({length:app.nodes.length});
-	});
+        for (var key in nodes) {
+            var node = nodes[key];
+            var value = {
+                id: node.id,
+                manufacturerid: node.manufacturerid,
+                producttype: node.producttype,
+                name: node.name,
+                ready: node.ready
+            };
+            result.push(value);
+        }
 
-	app.get('/nodes/add', function (req, res) {
-		if (!adding) {
-			setTimeout(function(){adding = false;}, ADD_WAITING_TIME);
-			adding = true;
-			app.zwave.addNode(false);
-		}
-		res.send("adding...");
-	});
+        res.send(result);
+    });
 
-	app.get('/node/:nodeid', function (req, res) {
-		nodeid = req.params.nodeid;
-		if (app.nodes[nodeid]) {
-			var node = app.nodes[nodeid];
-			var value = {
-				id: node.id,
-				manufacturerid: node.manufacturerid,
-				producttype: node.producttype,
-				name: node.name,
-				ready: node.ready
-			};
-			res.send(value);
-		} else {
-			res.send("ops!");
-		}
-	});
+    app.get('/nodes/length', function(req, res) {
+        res.send({
+            length: nodes.length
+        });
+    });
 
-	app.get('/node/:nodeid/rename/:name', function (req, res) {
-		nodeid = req.params.nodeid;
-		if (app.nodes[nodeid]) {
-			name = req.params.name;
-			app.zwave.setNodeName(nodeid, name);
-			console.log(app.zwave.refreshNodeInfo(nodeid));
-			res.send("renamed");
-		} else {
-			res.send("ops!");
-		}
-	});
+    app.get('/nodes/add', function(req, res) {
+        if (!adding) {
+            setTimeout(function() {
+                adding = false;
+            }, ADD_WAITING_TIME);
+            adding = true;
+            zwave.addNode(false);
+        }
+        res.send("adding...");
+    });
 
-	app.get('/node/:nodeid/status', function (req, res) {
-		nodeid = req.params.nodeid;
-		if (app.nodes[nodeid]) {
-			node = app.nodes[nodeid];
+    app.get('/node/:nodeid', function(req, res) {
+        nodeid = req.params.nodeid;
+        if (nodes[nodeid]) {
+            var node = nodes[nodeid];
+            var value = {
+                id: node.id,
+                manufacturerid: node.manufacturerid,
+                producttype: node.producttype,
+                name: node.name,
+                ready: node.ready
+            };
+            res.send(value);
+        } else {
+            res.send("ops!");
+        }
+    });
 
-			var result = [];
-			for (var status in app.nodes[nodeid].classes) {
-				for (var key in app.nodes[nodeid].classes[status]) {
-					var st = app.nodes[nodeid].classes[status][key];
-					result.push(parseResult(st));
-				}
-			}
+    app.get('/node/:nodeid/rename/:name', function(req, res) {
+        nodeid = req.params.nodeid;
+        if (nodes[nodeid]) {
+            name = req.params.name;
+            zwave.setNodeName(nodeid, name);
+            console.log(zwave.refreshNodeInfo(nodeid));
+            res.send("renamed");
+        } else {
+            res.send("ops!");
+        }
+    });
 
-			res.send(result);
-		} else {
-			res.send("ops!");
-		}
-	});
+    app.get('/node/:nodeid/status', function(req, res) {
+        nodeid = req.params.nodeid;
+        if (nodes[nodeid]) {
+            node = nodes[nodeid];
 
-	app.get('/node/:nodeid/status/:status', function (req, res) {
-		nodeid = req.params.nodeid;
-		status = req.params.status;
-		if (app.nodes[nodeid] && app.nodes[nodeid].classes[status]) {
-			node = app.nodes[nodeid];
-			var result = [];
-			for (var key in app.nodes[nodeid].classes[status]) {
-				var st = app.nodes[nodeid].classes[status][key];
-				result.push(parseResult(st));
-			}
-			res.send(result);
-		} else {
-			res.send("ops!");
-		}
-	});
+            var result = [];
+            for (var status in nodes[nodeid].classes) {
+                for (var key in nodes[nodeid].classes[status]) {
+                    var st = nodes[nodeid].classes[status][key];
+                    result.push(parseResult(st));
+                }
+            }
 
-	app.get('/node/:nodeid/status/:status/:index', function (req, res) {
-		nodeid = req.params.nodeid;
-		status = req.params.status;
-		index = req.params.index;
-		if (app.nodes[nodeid] && 
-			app.nodes[nodeid].classes[status] && 
-			app.nodes[nodeid].classes[status][index]) {
+            res.send(result);
+        } else {
+            res.send("ops!");
+        }
+    });
 
-			node = app.nodes[nodeid];
-			res.send(parseResult(app.nodes[nodeid].classes[status][index]));
-		} else {
-			console.log(app.nodes[nodeid].classes[status]);
-			res.send("ops!");
-		}
-	});
+    app.get('/node/:nodeid/status/:status', function(req, res) {
+        nodeid = req.params.nodeid;
+        status = req.params.status;
+        if (nodes[nodeid] && nodes[nodeid].classes[status]) {
+            node = nodes[nodeid];
+            var result = [];
+            for (var key in nodes[nodeid].classes[status]) {
+                var st = nodes[nodeid].classes[status][key];
+                result.push(parseResult(st));
+            }
+            res.send(result);
+        } else {
+            res.send("ops!");
+        }
+    });
 
-	// change to post
-	app.get('/node/:nodeid/command/:command/:instance/:value', function (req, res) {
-		nodeid = req.params.nodeid;
-		command = req.params.command;
-		instance = req.params.instance;
-		value = req.params.value;
-		index = 0;
-		
-		if (app.nodes[nodeid] && 
-			app.nodes[nodeid].classes[command] && 
-			app.nodes[nodeid].classes[command][index]) {
+    app.get('/node/:nodeid/status/:status/:index', function(req, res) {
+        nodeid = req.params.nodeid;
+        status = req.params.status;
+        index = req.params.index;
+        if (nodes[nodeid] &&
+            nodes[nodeid].classes[status] &&
+            nodes[nodeid].classes[status][index]) {
 
-			node = app.nodes[nodeid];
-			// trick to boolean
-			if (value == 'false') {
-				value = false;
-			}
+            node = nodes[nodeid];
+            res.send(parseResult(nodes[nodeid].classes[status][index]));
+        } else {
+            console.log(nodes[nodeid].classes[status]);
+            res.send("ops!");
+        }
+    });
 
-			// app.zwave.setValue(nodeid, commandclass, instance, index, value);
-			console.log(nodeid, command, instance, index, value)
-			app.zwave.setValue(nodeid, command, instance, index, value);
-			res.send("executed");
-		} else {
-			console.log(app.nodes[nodeid].classes[command]);
-			res.send("ops!");
-		}
-	});
+    // change to post
+    app.get('/node/:nodeid/command/:command/:instance/:value', function(req, res) {
+        nodeid = req.params.nodeid;
+        command = req.params.command;
+        instance = req.params.instance;
+        value = req.params.value;
+        index = 0;
+
+        if (nodes[nodeid] &&
+            nodes[nodeid].classes[command] &&
+            nodes[nodeid].classes[command][index]) {
+
+            node = nodes[nodeid];
+            // trick to boolean
+            if (value == 'false') {
+                value = false;
+            }
+
+            // app.zwave.setValue(nodeid, commandclass, instance, index, value);
+            console.log(nodeid, command, instance, index, value)
+            zwave.setValue(nodeid, command, instance, index, value);
+            res.send("executed");
+        } else {
+            console.log(nodes[nodeid].classes[command]);
+            res.send("ops!");
+        }
+    });
 };
