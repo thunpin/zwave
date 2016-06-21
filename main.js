@@ -1,10 +1,10 @@
 var tools = require('./tools');
 
 var device = process.env.ZWV_DEVICE;
-// if (!device || device === '') {
-//     tools.log('ERROR', 'configure environement variable ZWV_DEVICE');
-//     process.exit(1);
-// }
+if (!device || device === '') {
+    tools.log('ERROR', 'configure environement variable ZWV_DEVICE');
+    process.exit(1);
+}
 
 var ZWave = require('openzwave-shared');
 var zwave = new ZWave({
