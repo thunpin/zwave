@@ -1,21 +1,20 @@
 var express = require('express');
-var tools = require('./tools.js');
 
-module.exports = function(app, zwave) {
+module.exports = function(zwave) {
 
     var nodes = [];
 
     // import node driver events
-    require('./zwave-events/driver.js')(zwave, tools);
+    require('./zwave-events/driver')(zwave);
 
     // import node related events
-    require('./zwave-events/node.js')(zwave, tools, nodes);
+    require('./zwave-events/node')(zwave, nodes);
 
     // just initialize your busines rule after this handler was executed
     zwave.on('scan complete', function() {
         var app = express();
 
-        require('./routers.js')(app, zwave, nodes);
+        require('./routers')(app, zwave, nodes);
 
         app.listen(3000, function() {
             tools.logTitle('zwave REST listening on port 3000!');
