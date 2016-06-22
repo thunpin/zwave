@@ -2,9 +2,11 @@ var express = require('express');
 var tools = require('./tools');
 var request = require('request');
 
+var uri = 'https://zwave-web.herokuapp.com'
+
 function verifyWebCommands(zwave) {
     var options = {
-        uri: 'http://localhost:4000/commands/read',
+        uri: uri + '/commands/read',
         method: 'GET',
         json: {}
     };

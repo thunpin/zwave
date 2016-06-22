@@ -4,9 +4,11 @@ var models = require('../model')(mongoose);
 var tools = require('../tools');
 var request = require('request');
 
+var uri = 'https://zwave-web.herokuapp.com'
+
 function clearNodes(node) {
     var options = {
-        uri: 'http://localhost:4000/node/clear',
+        uri: uri + '/node/clear',
         method: 'POST'
     };
 
@@ -18,7 +20,7 @@ function clearNodes(node) {
 
 function sendAllNodes(nodes) {
     var options = {
-        uri: 'http://localhost:4000/node/all',
+        uri: uri + '/node/all',
         method: 'POST',
         json: {nodes:nodes}
     };
@@ -31,7 +33,7 @@ function sendAllNodes(nodes) {
 
 function sendNode(node) {
     var options = {
-        uri: 'http://localhost:4000/node/' + node.id,
+        uri: uri + '/node/' + node.id,
         method: 'POST',
         json: {node:node}
     };
@@ -44,7 +46,7 @@ function sendNode(node) {
 
 function sendCommand(nodeid, commandclass, value, failedCallback) {
     var options = {
-        uri: 'http://localhost:4000/node/' + node.id + '/command/' + commandclass,
+        uri: uri + '/node/' + node.id + '/command/' + commandclass,
         method: 'POST',
         json: {value:value}
     };
@@ -182,9 +184,11 @@ module.exports = function(zwave, nodes) {
                 break;
             case 1:
                 console.log('node%d: timeout', nodeid);
-                nodes[nodeid].ready = false;
-                nodes[nodeid].save();
-                sendNode(node);
+		if (nodes[nodeid]) {
+	                nodes[nodeid].ready = false;
+	                nodes[nodeid].save();
+	                sendNode(node);
+		}
                 break;
             case 2:
                 console.log('node%d: nop', nodeid);
