@@ -1,4 +1,5 @@
 var express = require('express');
+var tools = require('./tools')
 
 module.exports = function(zwave) {
 

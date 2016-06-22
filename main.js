@@ -8,7 +8,7 @@ if (!device || device === '') {
 
 var ZWave = require('openzwave-shared');
 var zwave = new ZWave({
-    Logging: true
+    Logging: false
 });
 
 require('./zwave')(zwave);

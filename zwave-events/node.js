@@ -3,7 +3,7 @@ mongoose.connect('mongodb://localhost/test');
 var models = require('../model')(mongoose);
 var tools = require('../tools');
 
-module.exports = function(zwave) {
+module.exports = function(zwave, nodes) {
 
     // node events
     // ===========
