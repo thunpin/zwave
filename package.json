@@ -2,7 +2,7 @@
   "name": "zwave",
   "version": "0.0.1",
   "description": "zwave node test app",
-  "main": "server.js",
+  "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
