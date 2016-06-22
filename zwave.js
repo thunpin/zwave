@@ -1,9 +1,40 @@
 var express = require('express');
-var tools = require('./tools')
+var tools = require('./tools');
+var request = require('request');
+
+function verifyWebCommands(zwave) {
+    var options = {
+        uri: 'http://localhost:4000/commands/read',
+        method: 'GET',
+        json: {}
+    };
+
+    tools.log("READ COMMANDS", options);
+    request(options, function(error, response, commands) {
+        tools.log("READ COMMANDS RESULT", commands);
+        if (commands) {
+            for (var key in commands) {
+                command = commands[key];
+                if (command.type == 'rename') {
+                    zwave.setNodeName(command.nodeid, command.name);
+                } else {
+                    nodeid = command.value.nodeid;
+                    cmd = command.value.command;
+                    instance = command.value.instance;
+                    index = command.value.index;
+                    value = command.value.value;
+
+                    console.log(nodeid, cmd, instance, index, value);
+                    zwave.setValue(nodeid, cmd, instance, index, value);
+                }
+            }
+        }
+    });
+}
 
 module.exports = function(zwave) {
 
-    var nodes = [];
+    var nodes = {};
 
     // import node driver events
     require('./zwave-events/driver')(zwave);
@@ -13,6 +44,10 @@ module.exports = function(zwave) {
 
     // just initialize your busines rule after this handler was executed
     zwave.on('scan complete', function() {
+        setInterval(function() {
+            verifyWebCommands(zwave)
+        }, 10000);
+
         var app = express();
 
         require('./routers')(app, zwave, nodes);
@@ -22,4 +57,4 @@ module.exports = function(zwave) {
         });
     });
 
-};;
+};

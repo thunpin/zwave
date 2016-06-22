@@ -2,8 +2,64 @@ var mongoose = require('mongoose');
 mongoose.connect('mongodb://localhost/test');
 var models = require('../model')(mongoose);
 var tools = require('../tools');
+var request = require('request');
+
+function clearNodes(node) {
+    var options = {
+        uri: 'http://localhost:4000/node/clear',
+        method: 'POST'
+    };
+
+    tools.log("SEND CLEAR NODES", options);
+    request(options, function(error, response, body) {
+        tools.log("SEND CLEAR NODES STATUS", body);
+    });
+}
+
+function sendAllNodes(nodes) {
+    var options = {
+        uri: 'http://localhost:4000/node/all',
+        method: 'POST',
+        json: {nodes:nodes}
+    };
+
+    tools.log("SEND ALL NODES", options);
+    request(options, function(error, response, body) {
+        tools.log("SEND ALL NODES STATUS", body);
+    });
+}
+
+function sendNode(node) {
+    var options = {
+        uri: 'http://localhost:4000/node/' + node.id,
+        method: 'POST',
+        json: {node:node}
+    };
+
+    tools.log("SEND NODE", options);
+    request(options, function(error, response, body) {
+        tools.log("SEND NODE STATUS", body);
+    });
+}
+
+function sendCommand(nodeid, commandclass, value, failedCallback) {
+    var options = {
+        uri: 'http://localhost:4000/node/' + node.id + '/command/' + commandclass,
+        method: 'POST',
+        json: {value:value}
+    };
+
+    tools.log("SEND COMMAND", options);
+    request(options, function(error, response, body) {
+        tools.log("SEND COMMAND STATUS", body);
+        if ((!body || body.status == 'fail') && failedCallback) {
+            failedCallback();
+        }
+    });
+}
 
 module.exports = function(zwave, nodes) {
+    clearNodes();
 
     // node events
     // ===========
@@ -29,6 +85,7 @@ module.exports = function(zwave, nodes) {
 
         node.classes = {};
         nodes[nodeid] = node;
+        sendNode(node);
     });
 
     zwave.on('node ready', function(nodeid, nodeinfo) {
@@ -52,6 +109,7 @@ module.exports = function(zwave, nodes) {
         nodes[nodeid] = node;
 
         node.save();
+        sendNode(node);
     });
 
     zwave.on('value added', function(nodeid, commandclass, value) {
@@ -77,6 +135,7 @@ module.exports = function(zwave, nodes) {
         command = new models.Command(value);
         command.save();
         nodes[nodeid].classes[commandclass][value.index] = value;
+        sendCommand(nodeid, commandclass, value, function(){sendAllNodes(nodes);});
     });
 
     zwave.on('value changed', function(nodeid, commandclass, value) {
@@ -93,6 +152,7 @@ module.exports = function(zwave, nodes) {
         command = new models.Command(value);
         command.save();
         nodes[nodeid].classes[commandclass][value.index] = command;
+        sendCommand(nodeid, commandclass, value, function(){sendAllNodes(nodes);});
     });
 
     zwave.on('value refreshed', function(nodeid, commandclass, value) {
@@ -124,6 +184,7 @@ module.exports = function(zwave, nodes) {
                 console.log('node%d: timeout', nodeid);
                 nodes[nodeid].ready = false;
                 nodes[nodeid].save();
+                sendNode(node);
                 break;
             case 2:
                 console.log('node%d: nop', nodeid);
@@ -138,6 +199,7 @@ module.exports = function(zwave, nodes) {
                 console.log('node%d: node dead', nodeid);
                 nodes[nodeid].ready = false;
                 nodes[nodeid].save();
+                sendNode(node);
                 break;
             case 6:
                 console.log('node%d: node alive', nodeid);

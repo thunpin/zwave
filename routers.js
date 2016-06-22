@@ -8,6 +8,7 @@ function parseResult(result) {
     return {
         class_id: result.class_id,
         index: result.index,
+        instance: result.instance,
         type: result.type,
         genre: result.genre,
         label: result.label,
@@ -155,12 +156,12 @@ module.exports = function(app, zwave, nodes) {
     });
 
     // change to post
-    app.get('/node/:nodeid/command/:command/:instance/:value', function(req, res) {
+    app.get('/node/:nodeid/command/:command/:index/:instance/:value', function(req, res) {
         nodeid = req.params.nodeid;
         command = req.params.command;
         instance = req.params.instance;
         value = req.params.value;
-        index = 0;
+        index = req.params.index;
 
         if (nodes[nodeid] &&
             nodes[nodeid].classes[command] &&
@@ -173,7 +174,7 @@ module.exports = function(app, zwave, nodes) {
             }
 
             // app.zwave.setValue(nodeid, commandclass, instance, index, value);
-            console.log(nodeid, command, instance, index, value)
+            console.log(nodeid, command, instance, index, value);
             zwave.setValue(nodeid, command, instance, index, value);
             res.send("executed");
         } else {
