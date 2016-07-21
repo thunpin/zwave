@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">PioTWave</string>
+    <string name="title_listdevice_detail">listDevice Detail</string>
+</resources>
